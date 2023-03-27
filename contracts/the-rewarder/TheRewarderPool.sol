@@ -61,7 +61,7 @@ contract TheRewarderPool {
             liquidityToken,
             msg.sender,
             address(this),
-            amount
+            amount 
         );
     }
 

